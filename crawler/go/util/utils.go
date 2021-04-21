@@ -22,12 +22,12 @@ func InitializeCollector(domains ...string) *colly.Collector {
 	)
 
 	// increase the timeout to 250 from the default 10 seconds
-	c.SetRequestTimeout(5 * time.Minute)
+	c.SetRequestTimeout(250 * time.Second)
 
 	c.Limit(&colly.LimitRule{
-		Parallelism: 2,
+		Parallelism: 5,
 		Delay:       1 * time.Second,
-		RandomDelay: 1 * time.Second,
+		RandomDelay: 5 * time.Second,
 	})
 
 	return c

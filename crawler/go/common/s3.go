@@ -1,8 +1,6 @@
 package common
 
 import (
-	"bytes"
-	"io"
 	"log"
 	"os"
 	"strconv"
@@ -11,24 +9,36 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
-
-type AWSConfig struct {
-	Bucket string
-	Region string
-	Key    string
-	ACL    string // "public-read"
-}
 
 type S3Handler struct {
 	Session *session.Session
-	Config  *AWSConfig
 }
 
-func (h S3Handler) StartSession() error {
-	sess, err := session.NewSession(&aws.Config{Region: aws.String(h.Config.Region)})
+func (h *S3Handler) parseCredentials() *aws.Config {
 
+	AccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+	SecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	Region := os.Getenv("AWS_REGION")
+
+	return &aws.Config{
+		Region: aws.String(Region),
+		Credentials: credentials.NewStaticCredentials(
+		 AccessKeyID,
+		 SecretAccessKey,
+		 "", // a token will be generated when the session is used
+		),
+	   }
+}
+
+func (h *S3Handler) StartSession() error {
+
+	config := h.parseCredentials()
+
+	sess, err := session.NewSession(config)
+	
 	if err != nil {
 		log.Fatalln("S3Handler: cannot construct new session,  err: %", err)
 		return err
@@ -36,48 +46,35 @@ func (h S3Handler) StartSession() error {
 
 	h.Session = sess
 
-	return nil
-}
-
-func (h S3Handler) UploadFile(fileName string) error {
-	file, err := os.Open(fileName)
-	defer file.Close()
-
-	if err != nil {
-		log.Println("os.Open - filename: %, err: %", fileName, err)
-		return err
-	}
-
-	_, err = s3.New(h.Session).PutObject(&s3.PutObjectInput{
-		Bucket:             aws.String(h.Config.Bucket),
-		Key:                aws.String(h.Config.Key),
-		ACL:                aws.String(h.Config.ACL),
-		Body:               file,
-		ContentDisposition: aws.String("attachment"),
-	})
-
 	return err
 }
 
-func (h S3Handler) ReadFile(key string) (string, error) {
-	results, err := s3.New(h.Session).GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(h.Config.Bucket),
-		Key:    aws.String(key),
-	})
+func (h *S3Handler) UploadFile(destinationBucket string , sourceFileName string, destinationFileName string) error {
+	file, err := os.Open(sourceFileName)
+	defer file.Close()
 
 	if err != nil {
-		return "", err
+		log.Println("os.Open - filename: %, err: %", sourceFileName, err)
+		return err
 	}
 
-	defer results.Body.Close()
 
-	buf := bytes.NewBuffer(nil)
+	uploader := s3manager.NewUploader(h.Session)
 
-	if _, err := io.Copy(buf, results.Body); err != nil {
-		return "", err
+
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(destinationBucket),
+		ACL:    aws.String("private"),
+		Key:    aws.String(destinationFileName),
+		Body:   file,
+	   })
+
+	if err != nil {
+		log.Println("ofck: err: %", err)
+		return err
 	}
 
-	return string(buf.Bytes()), nil
+	return err
 }
 
 func GenerateBucketName(bucketSignature string, botName string, refDate time.Time) string {
