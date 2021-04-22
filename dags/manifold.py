@@ -37,9 +37,6 @@ start_time_str = start_time.strftime("%d/%m/%Y %H:%M:%S")
 
 
 # Configuration variables
-s3_path: str = Variable.get("manifold_s3_path")
-s3_path_template: str = Variable.get("manifold_s3_path_template")
-
 aws_connection = BaseHook.get_connection("aws_credentials")
 aws_username: str = aws_connection.login
 aws_password: str = aws_connection.password
@@ -81,7 +78,7 @@ SPARK_STEPS = [
                 'cluster',
                 '--master',
                 'yarn',
-                f"s3://{s3_path}/scripts/el_to_parquet.py",
+                "s3://{{ var.value.s3_path }}/scripts/el_to_parquet.py",
                 '--execution_date',
                 '{{ ds }}',
                 '--aws_key',
@@ -89,9 +86,9 @@ SPARK_STEPS = [
                 '--aws_secret',
                 aws_password,
                 '--s3_bucket',
-                s3_path,
+                '{{ var.value.s3_path }}',
                 '--s3_path_template',
-                s3_path_template,
+                '{{ var.value.s3_path_template }}',
             ],
         },
     }
@@ -240,8 +237,8 @@ with DAG(
             dag=dag,
             redshift_conn_id='redshift_conn',
             redshift_credentials_id='redshift_credentials',
-            s3_path=s3_path,
-            s3_bucket_template=s3_path_template,
+            s3_path='{{ var.value.s3_path }}',
+            s3_bucket_template='{{ var.value.s3_path_template }}',
             destination_name=destination_name,
             source_name=source_name,
             role_name=redshift_role_name,
