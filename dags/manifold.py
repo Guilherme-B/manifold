@@ -123,7 +123,6 @@ JOB_FLOW_OVERRIDES = {
     'Steps': SPARK_STEPS,
     'JobFlowRole': 'EMR_EC2_DefaultRole',
     'ServiceRole': 'EMR_DefaultRole',
-    'LogUri': 's3://base-data-spark-listings/logs/',
     'BootstrapActions': [
         {
             'Name': 'string',
