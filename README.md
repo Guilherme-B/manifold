@@ -166,6 +166,20 @@ docker-compose up -d
 GNU General Public License v3.0
 
 
+## Udacity Nanodegree Questions
+
+Rubric's scenarios:
+a) The data was increased by 100x - The project runs on Apache Spark, AWS EMR, S3 and Redshift, all of which, are scalable platforms. Should tbe data increase 100x two actions might be required: 
+* increase cluster sizes (on EMR and Redshift) to accommodate more data and process the data faster 
+* * review Redshift's dist and sort keys in addition to the Spark ETL process to optimize the partition count 
+b) The pipelines would be run on a daily basis by 7 am every day.
+- Airflow's DAG can be triggered according to any specified rule, in this case, the rule would be '0 7 * * *'
+- Nonetheless, the pipeline is programmed so as to include only incremental changes (backfill enabled) hence, doing so might result in a lower runtime and decrease overall costs
+- Do keep in mind, that a scraping process is assumed to take place; given the high response time scraped websites tend to have, a daily scrape is not recommended
+c) The database needed to be accessed by 100+ people 
+- The database's access would have to be managed according to AWS's IAM users and roles; nonetheless, there is no physical constraint on Redshift, other than again, possibly having to upgrade/increase the cluster's size
+
+
 [//]: # (Reference links)
 
    [GoLang]: <https://golang.org/>
