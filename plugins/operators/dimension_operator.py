@@ -87,17 +87,33 @@ class DimensionOperator(BaseOperator):
 
         query: str = self._generate_upsert_query(
             self._hook, self._target_table, self._base_table, self._match_columns)
-        
+
         self.log.info('DimensionOperator::execute running query %', query)
 
         self._hook.run(query, autocommit=True, parameters=None)
 
         for output in self._hook.conn.notices:
             self.log.info(output)
-            
+
         self.log.info('DimensionOperator::execute finished running query')
 
     def _get_insertion_columns(self, hook: PostgresHook, schema_name: str, table_name: str) -> List[str]:
+        """Retrieves the list of columns present in the selected table_name within the schema_name schema, in their correct order (table order)
+
+        Parameters
+        ----------
+        hook : PostgresHook
+            The Apache Airflow PostgresHook holding the connection details
+        schema_name : str
+            The target's schema name
+        table_name : str
+            The target's table name
+
+        Returns
+        -------
+        List[str]
+            The list of columns present in the table_name within the schema_name schema
+        """        
         # Get all column names from the Redshift presentation layer, and exclude ID from the insertion
         base_query = '''
             SELECT 
@@ -121,6 +137,25 @@ class DimensionOperator(BaseOperator):
         return columns
 
     def _generate_upsert_query(self, hook: PostgresHook, target_table: str, base_table: str, match_columns: List[str]) -> str:
+        """Generates an AWS Redshift SQL upsert (update and insert) statement using match_columns as the business keys between base_table (staging) and target_table (presentation)
+           tracking deltas via SCD2
+
+        Parameters
+        ----------
+        hook : PostgresHook
+            The Apache Airflow PostgresHook holding the connection details
+        target_table : str
+            The staging table name
+        base_table : str
+            The presentation table name
+        match_columns : List[str]
+            The business keys
+
+        Returns
+        -------
+        str
+            The generated upsert SQL statement
+        """        
         # constructs the match predicate, creating the join predicate and combining multiple conditions
         match_predicate: str = '\n and \n'.join(
             ['base.' + column + ' = target.' + column for column in match_columns])

@@ -51,7 +51,7 @@ class S3ToRedshiftOperator(BaseOperator):
     def execute(self, context):
         execution_date: str = context['execution_date']
         execution_date = execution_date.date()
-        
+
         bucket_name = self._format_s3_template(
             s3_path=self._s3_path, s3_bucket_template=self._s3_bucket_template, execution_date=execution_date, s3_path_subfolder='tmp')
 
@@ -80,7 +80,26 @@ class S3ToRedshiftOperator(BaseOperator):
                            source_name: str,
                            role_name: str,
                            region_name: str) -> str:
+        """Injects meta data onto the provided copy query
 
+        Parameters
+        ----------
+        bucket_name : str
+            the name of the AWS S3 bucket containing the Parquet files
+        destination_name : str
+            the AWS Redshift's destination table name
+        source_name : str
+            the AWS Redshift's source Parquet file name
+        role_name : str
+            the AWS Redshift's role name
+        region_name : str
+            the AWS Redshift's region name
+
+        Returns
+        -------
+        str
+            the injected query
+        """
         formatted_query: str = self.staging_copy_query.format(
             destination_name=destination_name,
             source_name=source_name.format(bucket_name=bucket_name),
@@ -97,15 +116,23 @@ class S3ToRedshiftOperator(BaseOperator):
                             s3_path_subfolder='tmp') -> str:
         """Generates the full S3 bucket parquet path by injecting the metadata in the S3 template
 
-        Args:
-            s3_path (str): the base s3 path (e.g. s3://manifold_data would be manifold_data)
-            s3_bucket_template (str): the template to define the data location based on the execution_date (e.g. /{week}/{month}/{week}/)
-            execution_date (str): the DAG's execution date
-            s3_path_subfolder (str, optional): the subfolder within the s3_bucket_template which contains the parquet files. Defaults to 'tmp'.
+        Parameters
+        ----------
+        s3_path : str
+            the base s3 path (e.g. s3://manifold_data would be manifold_data)
+        s3_bucket_template : str
+            the template to define the data location based on the execution_date (e.g. /{week}/{month}/{week}/)
+        execution_date : str
+            the DAG's execution date
+        s3_path_subfolder : str, optional
+            the subfolder within the s3_bucket_template which contains the parquet files. Defaults to 'tmp', by default 'tmp'
 
-        Returns:
-            str: the full s3 bucket parquet path
+        Returns
+        -------
+        str
+            the full s3 bucket parquet path
         """
+
         year: int = execution_date.year
         month: int = execution_date.month
         week: int = execution_date.isocalendar()[1]
@@ -118,6 +145,7 @@ class S3ToRedshiftOperator(BaseOperator):
             day=day
         )
 
-        full_path: str = 's3://' + s3_path + formatted_template + '/' + s3_path_subfolder + '/'
+        full_path: str = 's3://' + s3_path + \
+            formatted_template + '/' + s3_path_subfolder + '/'
 
         return full_path
