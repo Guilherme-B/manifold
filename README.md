@@ -5,13 +5,13 @@ Manifold is a plug-and-play end-to-end real estate asset tracker. In other words
 
 The project is built on top of different languages and platforms:
 * Scrapers
-  * [GoLang] - Go is a statically typed, compiled programming language designed at Google by Robert Griesemer, Rob Pike, and Ken Thompson. Go is syntactically similar to C, but with memory safety, garbage collection, structural typing, and CSP-style concurrency, making it a performant candidate for web scraping
+  * [GoLang] - Go is a statically typed, compiled programming language designed at Google by Robert Griesemer, Rob Pike, and Ken Thompson. Go is syntactically similar to C, but with memory safety, garbage collection, structural typing, and CSP-style concurrency making it a performant candidate for web scraping
   * [Python] (deprecated)
 * ETL
   *  [Apache Airflow] - Apache Airflow is an open-source workflow management platform
   *  [Apache Spark] - Apache Spark is an open-source unified analytics engine for large-scale data processing
   *  [AWS EMR] - Amazon Elastic MapReduce (EMR) is a tool for big data processing and analysis on Apache Spark, Apache Hive, Apache HBase, Apache Flink, Apache Hudi, and Presto
-  *  [AWS Redshift] - Amazon Redshift is a data warehouse product which forms part of the larger cloud-computing platform Amazon Web Services
+  *  [AWS Redshift] - Amazon Redshift is a data warehouse product that forms part of the larger cloud-computing platform Amazon Web Services
   *  [AWS S3] - Amazon Simple Storage Service (Amazon S3) is an object storage service that offers industry-leading scalability, data availability, security, and performance
   
 
@@ -28,7 +28,7 @@ The project is built on top of different languages and platforms:
 
 ## Structure
 
-The project is divided in two main categories: web scrapers (crawlers) and ETL resources.
+The project is divided into two main categories: web scrapers (crawlers) and ETL resources.
 
 | Folder | Category | Description |
 | ------ | ------ |  ------ |
@@ -47,7 +47,7 @@ The ETL process consists of five interlinked and linear steps:
 3. Staging layer- Parquet to AWS Redshift ([AWS Redshift], [AWS S3])
 4. Presentation layer - presentation layer creation with Slowly Changing Dimensions (type 2)
 
-Note: The scrapers were not included in the DAG given different users will aim at executing them in different manners (locally, docker, kubernetes) hence, a dummy operator replaces the scrapers by default.
+Note: The scrapers were not included in the DAG given different users will aim at executing them in different manners (locally, docker, Kubernetes) hence, a dummy operator replaces the scrapers by default.
 
 ### Intermmediate layer
 ![EMR Create](https://github.com/Guilherme-B/manifold/blob/main/images/dag/emr_create.png)
@@ -59,29 +59,29 @@ Launches an EMR (*default* cluster) instance, which installs the required packag
 - consuming the identified JSON sources
 - cleanup and standardization
 - staging layer creation (Parquet files)
-- save Parquet files to S3 bucket
+- save Parquet files to an S3 bucket
 
 ### Staging layer
 
-The staging laye is in charge of consuming the [AWS S3] Parquet files into [AWS Redshift]. The process is handled by the S3 to Redshift Operator.
+The staging layer is in charge of consuming the [AWS S3] Parquet files into [AWS Redshift]. The process is handled by the S3 to Redshift Operator.
 
 The DAG is then comprised of two steps:
 
-1- Assert the existance of the proper schemas, and create them if not present
+1- Assert the existence of the proper schemas, and create them if not present
 ![Schema Create](https://github.com/Guilherme-B/manifold/blob/main/images/dag/staging_schema.png)
 2- Copy the Parquet files into the appropriate dimensional object
 ![Staging Copy](https://github.com/Guilherme-B/manifold/blob/main/images/dag/staging_tables.png)
 
 ### Presentation layer
 
-The presentation or consumption layer holds the final updated dimensional model. Roughly speaking, the layer's responsability are:
+The presentation or consumption layer holds the final updated dimensional model. Roughly speaking, the layer's responsibilities are:
 1- Calculate dimension Deltas
 2- Upsert dimension data according to the computed Delta
 ![Presentation Dimension](https://github.com/Guilherme-B/manifold/blob/main/images/dag/presentation_dimensions.png)
 3- Append to the fact tables
 ![Presentation Fact](https://github.com/Guilherme-B/manifold/blob/main/images/dag/presentation_facts.png)
 
-Operations 1 and 2 are the responsability of the [Dimension Operator], whereas the Fact appending is handled via Postgres Operator.
+Operations 1 and 2 are the responsibility of the [Dimension Operator], whereas the Fact appending is handled via Postgres Operator.
 
 ## Custom Operators
 
@@ -103,7 +103,7 @@ The [Dimension Operator] computes the Deltas between a *base_table* and *target_
 
 ### S3 to Redshift Operator
 
-The [S3 to Redshift Operator] is responsible for taking a set of Parquet files stored in an [AWS S3] bucket, and pushing them to the defined [AWS Redshift] cluster.
+The [S3 to Redshift Operator] is responsible for taking a set of Parquet files stored in an [AWS S3] bucket and pushing them to the defined [AWS Redshift] cluster.
 
 
 | Argument | Type | Description |
@@ -119,7 +119,7 @@ The [S3 to Redshift Operator] is responsible for taking a set of Parquet files s
 
 ### Sources
 
-Manifold comes with two out-of-the-box scrapers: one developed in GoLang, two developed in Python (deprecated). However, given the small amount of local listings per website (around 10.000), Manifold has been tested on 50 million records of weekly data, in addition to the weekly scraped listings. 
+Manifold comes with two out-of-the-box scrapers: one developed in GoLang, two developed in Python (deprecated). However, given the small number of local listings per website (around 10.000), Manifold has been tested on 50 million records of weekly data, in addition to the weekly scraped listings. 
 
 External data sources:
 * [Argentina Data]
@@ -137,7 +137,7 @@ The final dataset contained around 50GB of data.
 
 ## Installation
 
-Manifold is a plug-and-play project, which is fully working from the moment [Apache Airflow] is started. Nonetheless, there are configurations which need to be set and connections to be created in order to drive the DAG and make sure its pointing in the right direction, with the appropriate permissions. 
+Manifold is a plug-and-play project, which is fully working from the moment [Apache Airflow] is started. Nonetheless, there are configurations that need to be set and connections to be created in order to drive the DAG and make sure it's pointing in the right direction, with the appropriate permissions. 
 
 ### Configuration
 #### Variables
@@ -155,7 +155,7 @@ Manifold is a plug-and-play project, which is fully working from the moment [Apa
 
 ### Docker
 
-Apache Spark can be started by using docker compose on the provided image, which takes care of the entire process including first-time setup:
+Apache Spark can be started by using docker-compose on the provided image, which takes care of the entire process including the first-time setup:
 ```sh
 cd manifold
 docker-compose up -d
