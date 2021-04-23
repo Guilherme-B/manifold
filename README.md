@@ -15,7 +15,6 @@ The project is built on top of different languages and platforms:
   *  [AWS S3] - Amazon Simple Storage Service (Amazon S3) is an object storage service that offers industry-leading scalability, data availability, security, and performance
   
 
-![DAG](https://github.com/Guilherme-B/manifold/blob/main/images/dag/graph.PNG)
 
 ## Features
 
@@ -48,6 +47,27 @@ The ETL process consists of five interlinked and linear steps:
 4. Presentation layer - presentation layer creation with Slowly Changing Dimensions (type 2)
 
 Note: The scrapers were not included in the DAG given different users will aim at executing them in different manners (locally, docker, Kubernetes) hence, a dummy operator replaces the scrapers by default.
+
+![DAG](https://github.com/Guilherme-B/manifold/blob/main/images/dag/graph.PNG)
+
+### Data Model
+
+The data model is comprised of four dimensions and one fact table:
+
+| Object Name| Object Type| SCD Type | Description |
+| ------ | ------ |  ------ |  ------ |
+| dim_asset| Dimension| SCD2 | The unique asset dimension |
+| dim_broker | Dimension| SCD2 | The unique broker dimension |
+| dim_geography | Dimension| SCD2 | The unique grography (country, district, county, parish) dimension|
+| dim_date_view | Dimension| SCD2 | The unique date dimension (note: the object is a view which might need reparametrization) |
+| fact_stock| Fact| None | Holds the stock (assets) present at a given time step |
+
+![DAG](https://github.com/Guilherme-B/manifold/blob/main/images/dag/data_model.PNG)
+
+Note: for future work, it's worth considering adding three additional fact tables:
+* fact_new_stock - represents assets not present in the previous date's stock
+* fact_deleted_stock - represents assets no longer present relative to the previous date's stock
+* fact_price_oscillations - represents assets that suffered a price oscillation relative to the previous date's stock
 
 ### Intermmediate layer
 ![EMR Create](https://github.com/Guilherme-B/manifold/blob/main/images/dag/emr_create.png)
@@ -117,7 +137,26 @@ The [S3 to Redshift Operator] is responsible for taking a set of Parquet files s
 | role_name | str | The [AWS Redshift] role name |
 | region_name | str | The [AWS Redshift] cluster region |
 
-### Sources
+### Data Quality - Count Operator
+
+The [Data Quality - Count Operator] implements a basic data quality layer, asserting whether or not a table contains records.
+
+| Argument | Type | Description |
+| ------ | ------ |  ------ |
+| postgres_conn_id | str | The Airflow Postgres connection ID |
+| table_name | str | The Postgres/Redshift table name |
+
+### Data Quality - Dimension Operator
+
+The [Data Quality - Dimension Operator] is responsible for checking if a dimension contains multiple active records, in other words, if the Slowly Changing Dimension type 2 failed to process appropriately.
+
+| Argument | Type | Description |
+| ------ | ------ |  ------ |
+| postgres_conn_id | str | The Airflow Postgres connection ID |
+| table_name | str | The Postgres/Redshift table name |
+| identification_columns | List[str] | The unique columns (e.g. contract_number for dim_asset, broker_name for dim_broker) to serve as business keys |
+
+## Sources
 
 Manifold comes with two out-of-the-box scrapers: one developed in GoLang, two developed in Python (deprecated). However, given the small number of local listings per website (around 10.000), Manifold has been tested on 50 million records of weekly data, in addition to the weekly scraped listings. 
 
@@ -166,22 +205,6 @@ docker-compose up -d
 GNU General Public License v3.0
 
 
-## Udacity Nanodegree Questions
-
-Rubric's scenarios:
-The data was increased by 100x - The project runs on Apache Spark, AWS EMR, S3 and Redshift, all of which, are scalable platforms. Should tbe data increase 100x two actions might be required: 
-* increase cluster sizes (on EMR and Redshift) to accommodate more data and process the data faster 
-* review Redshift's dist and sort keys in addition to the Spark ETL process to optimize the partition count 
-
-The pipelines would be run on a daily basis by 7 am every day.
-* Airflow's DAG can be triggered according to any specified rule, in this case, the rule would be '0 7 * * *'
-* Nonetheless, the pipeline is programmed so as to include only incremental changes (backfill enabled) hence, doing so might result in a lower runtime and decrease overall costs
-* Do keep in mind, that a scraping process is assumed to take place; given the high response time scraped websites tend to have, a daily scrape is not recommended
-
-The database needed to be accessed by 100+ people 
-* The database's access would have to be managed according to AWS's IAM users and roles; nonetheless, there is no physical constraint on Redshift, other than again, possibly having to upgrade/increase the cluster's size
-
-
 [//]: # (Reference links)
 
    [GoLang]: <https://golang.org/>
@@ -197,6 +220,8 @@ The database needed to be accessed by 100+ people
    [scripts/el_to_parquet.py]: <https://github.com/Guilherme-B/manifold/blob/main/scripts/el_to_parquet.py>
    [S3 to Redshift Operator]: <https://github.com/Guilherme-B/manifold/blob/main/plugins/operators/s3toredshift_operator.py>
    [Dimension Operator]: <https://github.com/Guilherme-B/manifold/blob/main/plugins/operators/dimension_operator.py>
+   [Data Quality - Count Operator]: <https://github.com/Guilherme-B/manifold/blob/main/plugins/operators/data_quality_count_operator.py>
+   [Data Quality - Dimension Operator]: <https://github.com/Guilherme-B/manifold/blob/main/plugins/operators/data_quality_dimension_operator.py>
    
    [Argentina Data]: <https://storage.googleapis.com/properati-data-public/ar_properties.csv.gz>
    [Colombia Data]: <https://storage.googleapis.com/properati-data-public/co_properties.csv.gz>
