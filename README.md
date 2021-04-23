@@ -62,7 +62,7 @@ The data model is comprised of four dimensions and one fact table:
 | dim_date_view | Dimension| SCD2 | The unique date dimension (note: the object is a view which might need reparametrization) |
 | fact_stock| Fact| None | Holds the stock (assets) present at a given time step |
 
-![DAG](https://github.com/Guilherme-B/manifold/blob/main/images/dag/data_model.PNG)
+![DAG](https://github.com/Guilherme-B/manifold/blob/main/images/data_model.PNG)
 
 Note: for future work, it's worth considering adding three additional fact tables:
 * fact_new_stock - represents assets not present in the previous date's stock
